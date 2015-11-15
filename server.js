@@ -25,7 +25,6 @@ var rss_feeds = [
     'http://www.reflex.cz/rss',
     'http://ihned.cz/?m=rss',
     'http://www.tyden.cz/rss/rss.php?all'
-
 ];
 
 
@@ -163,9 +162,7 @@ var MyApp = function() {
                 res.setHeader('Content-Type', 'text/html');
 
                 var total = '<div id="total"><strong><a href="/">'+Object.keys(items).length+'</a></strong> článků &nbsp;|&nbsp; '+
-                        'wordclouds: <a href="/wordcloud?count=like">likes</a> <a href="/wordcloud?count=share">shares</a>'+
-                        ' <a href="/wordcloud?count=comment">comments</a> <a href="/wordcloud?count=tweet">tweets</a>'+
-                        ' &nbsp;|&nbsp; nejvíce: <a href="/?most=like">likes</a> <a href="/?most=share">shares</a>'+
+                        'nejvíce: <a href="/?most=like">likes</a> <a href="/?most=share">shares</a>'+
                         ' <a href="/?most=comment">comments</a> <a href="/?most=tweet">tweets</a>'+
                         '</div>';
 
@@ -191,7 +188,7 @@ var MyApp = function() {
                 for (var i in items) {
 
                     //if (true) {
-                    if (counter < 1000) { // 1000 newest articles
+                    if (counter < 100) { // 100 newest articles
                         counter++;
 
                         last_check = items[i].checks.length-1;
@@ -470,6 +467,10 @@ var MyApp = function() {
                     self.db.collection('urls').find().toArray(function(err, items) {
 
                         var getViralityData = function(item) {
+
+                            if (!item.title) {
+                                item.title = 'bez titulku';
+                            }
 
                             // data to insert into db
                             var data = {
