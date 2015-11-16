@@ -37,7 +37,7 @@ var head =
             '#total a,.title a{text-decoration:none}.block,.left{float:left}body{font-family:arial,sans-serif;padding:40px}.clear{clear:both}'+
             '#total{padding-bottom:20px;border-bottom:1px dotted silver;margin-bottom:20px}#total a{color:#4ba3d9;margin-left:5px}'+
             '#filtered_by{padding-bottom:30px}.article{color:#444;font-size:13px;line-height:15px;margin-bottom:25px}'+
-            '.title a{color:#4ba3d9;font-weight:700}.block{display:block;width:35px}.timestamp{color:#a7a7a7}'+
+            '.title a{color:#4ba3d9;font-weight:700}.block{display:block;width:50px}.timestamp{color:#a7a7a7}'+
             '</style>'+
         '</head>'+
         '<body>';
@@ -412,7 +412,7 @@ var MyApp = function() {
                 var h = d.getHours();
 
                 // check one feed every minute
-                if (rss_feeds[m]) {
+                if (rss_feeds[m]) {console.log(rss_feeds[m], 'feed checked');
 
                     /*
                     get RSS feed
@@ -532,7 +532,7 @@ var MyApp = function() {
                                 }
                                 else { // loop finished
                                     loop_running = 0; // marker signaling that loop can be started again
-                                    console.log('Finished at', moment().tz('Europe/Prague').toISOString()+',', items_to_check.length+' articles.');
+                                    console.log('Likes obtained at', moment().tz('Europe/Prague').toISOString()+',', items_to_check.length+' articles.');
                                 }
                             }, 1100)
                         };
