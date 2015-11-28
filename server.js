@@ -93,7 +93,6 @@ var MyApp = function() {
 
         //  Local cache for static content.
         self.zcache['index.html'] = fs.readFileSync('./static/index.html');
-        self.zcache['d3-cloud.js'] = fs.readFileSync('./static/d3-cloud.js');
     };
 
 
@@ -147,11 +146,6 @@ var MyApp = function() {
         self.routes['/static'] = function(req, res) {
             res.setHeader('Content-Type', 'text/html');
             res.send(self.cache_get('index.html'));
-        };
-
-        self.routes['/d3-cloud.js'] = function(req, res) {
-            res.setHeader('Content-Type', 'text/javascript');
-            res.send(self.cache_get('d3-cloud.js'));
         };
 
         self.routes['/'] = function(req, res) {
@@ -242,112 +236,6 @@ var MyApp = function() {
                     '</html>';
 
                 res.send(head+total+articles+foot);
-            });
-        };
-
-        self.routes['/wordcloud'] = function(req, res) {
-
-            // read from db
-            self.db.collection('virality').find().toArray(function(err, items) {
-
-                res.setHeader('Content-Type', 'text/html');
-
-                var wordcloud = '', last_check;
-                for (var i in items) {
-                    if (items[i].title) {
-                        last_check = items[i].checks.length-1;
-
-                        var last_count = items[i].checks[last_check][req.query.count+'_count'];
-
-                        var title = items[i].title;
-
-                        // remove unwanted words
-                        var unwanted = /^(a|až|už|k|ať|by|s|v|ve|jsou|je|u|za|ze|z|od|do|pro|si|kde|aby|to|má|o|i|ani|jen|se|na|ho|bylo)$/, cleaned = '';
-                        title.split(' ').forEach(function(word) {
-                            if (!unwanted.test(word.toLowerCase())) {
-                                cleaned = cleaned+'#'+word;
-                            }
-                        });
-
-                        var title_weighted = '';
-
-                        for (var i = 0; i < last_count; i++) {
-                            title_weighted = title_weighted+cleaned;
-                        }
-
-                        wordcloud = wordcloud+title_weighted;
-                    }
-                }
-
-                // strip commas and dots
-                wordcloud = wordcloud.replace(/[,.:]/g, '');
-
-                // count occurrences of each word in string of titles multiplied by likes
-                // based on http://stackoverflow.com/a/14914165/716001
-                var counts = wordcloud.split('#').reduce(function(map, word){
-                    map[word] = (map[word]||0)+1;
-                    return map;
-                }, Object.create(null));
-                // outputs {{"word": 22}, ...}
-
-                // reformat data for d3-cloud
-                var data_4_d3cloud = [], c;
-                for (c in counts) {
-                    data_4_d3cloud.push({"text": c, "size": counts[c]});
-                };
-                // outputs [{"text": "word", "size": 22}, ...]
-
-                // sort in ascending order
-                data_4_d3cloud.sort(function(a, b) {
-                    return a.size - b.size;
-                });
-
-                // get only 100 most important words and adjust size so the biggest words fit to screen
-                var data_4_d3cloud_top = [];
-                var highest_size = data_4_d3cloud[data_4_d3cloud.length-1].size;
-                for (var i = data_4_d3cloud.length-1; i > data_4_d3cloud.length-100; i--) {
-                    var calculated_size = data_4_d3cloud[i].size/(highest_size/100) || 0;
-                    if (calculated_size > 10) {
-                        data_4_d3cloud_top.push({"text": data_4_d3cloud[i].text, "size": calculated_size});
-                    }
-                };
-
-                var d3cloud = 
-                    '<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>'+
-                    '<script src="./d3-cloud.js"></script>'+
-                    '<script>(function() {'+
-                        'var fill = d3.scale.category20();'+
-                        'var layout = d3.layout.cloud().size([1400, 800]).words('+
-                            JSON.stringify(data_4_d3cloud_top)+
-                            ').padding(6).rotate(function() { return ~~(Math.random() * 1) * 0; }).font("Arial")'+
-                            '.fontSize(function(d) { return d.size; }).on("end", draw);'+
-                        'layout.start();'+
-                        'function draw(words) {'+
-                          'd3.select("body").append("svg")'+
-                              '.attr("width", layout.size()[0])'+
-                              '.attr("height", layout.size()[1])'+
-                              '.append("g")'+
-                              '.attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")'+
-                              '.selectAll("text")'+
-                              '.data(words)'+
-                              '.enter().append("text")'+
-                              '.style("font-size", function(d) { return d.size + "px"; })'+
-                              '.style("font-family", "Arial")'+
-                              '.style("fill", function(d, i) { return fill(i); })'+
-                              '.attr("text-anchor", "middle")'+
-                              '.attr("transform", function(d) {'+
-                                'return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";'+
-                              '})'+
-                              '.text(function(d) { return d.text; });'+
-                        '}'+
-                    '})();</script>';
-
-                var foot =
-                        '</body>'+
-                    '</html>';
-
-                res.send(head+d3cloud+foot);
-                //res.send(head+JSON.stringify(data_4_d3cloud_top)+foot);
             });
         };
     };
@@ -468,45 +356,48 @@ var MyApp = function() {
 
                         var getViralityData = function(item) {
 
-                            if (!item.title) {
-                                item.title = 'bez titulku';
-                            }
+                            if (item) {
 
-                            // data to insert into db
-                            var data = {
-                                'title': item.title,
-                                'url': item.url
-                            };
-
-                            // get Facebook likes and shares and tweets
-                            var encoded_url = encodeURIComponent(data.url);
-                            var fb_graph_req = 
-                            "https://graph.facebook.com/fql?q=SELECT url, share_count, like_count, comment_count "+
-                            "FROM link_stat WHERE url='"+encoded_url+"'";
-
-                            request(fb_graph_req, function (error, response, body) {
-                                if (!error && response.statusCode == 200) {
-                                    var facebook_data = JSON.parse(body).data[0];
-
-                                    var tweets_req = 'http://urls.api.twitter.com/1/urls/count.json?url='+encoded_url;
-
-                                    request(tweets_req, function (error, response, body) {
-                                        if (!error && response.statusCode == 200) {
-
-                                            var check = {
-                                                'timestamp': moment().toISOString(),
-                                                'like_count': facebook_data.like_count,
-                                                'share_count': facebook_data.share_count,
-                                                'comment_count': facebook_data.comment_count,
-                                                'tweet_count': JSON.parse(body).count
-                                            };
-
-                                            // insert data into db
-                                            self.db.collection('virality').update(data, {$addToSet: {'checks': check}}, {upsert: true});
-                                        }
-                                    });
+                                if (!item.title) {
+                                    item.title = 'bez titulku';
                                 }
-                            });
+
+                                // data to insert into db
+                                var data = {
+                                    'title': item.title,
+                                    'url': item.url
+                                };
+
+                                // get Facebook likes and shares and tweets
+                                var encoded_url = encodeURIComponent(data.url);
+                                var fb_graph_req = 
+                                "https://graph.facebook.com/fql?q=SELECT url, share_count, like_count, comment_count "+
+                                "FROM link_stat WHERE url='"+encoded_url+"'";
+
+                                request(fb_graph_req, function (error, response, body) {
+                                    if (!error && response.statusCode == 200) {
+                                        var facebook_data = JSON.parse(body).data[0];
+
+                                        var tweets_req = 'http://urls.api.twitter.com/1/urls/count.json?url='+encoded_url;
+
+                                        request(tweets_req, function (error, response, body) {
+                                            if (!error && response.statusCode == 200) {
+
+                                                var check = {
+                                                    'timestamp': moment().toISOString(),
+                                                    'like_count': facebook_data.like_count,
+                                                    'share_count': facebook_data.share_count,
+                                                    'comment_count': facebook_data.comment_count,
+                                                    'tweet_count': JSON.parse(body).count
+                                                };
+
+                                                // insert data into db
+                                                self.db.collection('virality').update(data, {$addToSet: {'checks': check}}, {upsert: true});
+                                            }
+                                        });
+                                    }
+                                });
+                            }
                         };
 
                         var items_to_check = [];
