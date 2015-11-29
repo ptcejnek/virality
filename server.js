@@ -300,7 +300,7 @@ var MyApp = function() {
                 var h = d.getHours();
 
                 // check one feed every minute
-                if (rss_feeds[m]) {console.log(rss_feeds[m], 'feed checked');
+                if (rss_feeds[m]) {
 
                     /*
                     get RSS feed
@@ -394,7 +394,13 @@ var MyApp = function() {
                                                 // insert data into db
                                                 self.db.collection('virality').update(data, {$addToSet: {'checks': check}}, {upsert: true});
                                             }
+                                            else {
+                                                if (error) {console.log('twitter', error);}
+                                            }
                                         });
+                                    }
+                                    else {
+                                        if (error) {console.log('facebook', error);}
                                     }
                                 });
                             }
