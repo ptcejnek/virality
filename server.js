@@ -404,6 +404,9 @@ var MyApp = function() {
                                     }
                                 });
                             }
+                            else {
+                                console.log('no item defined');
+                            }
                         };
 
                         var items_to_check = [];
