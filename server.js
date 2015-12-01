@@ -223,7 +223,6 @@ var MyApp = function() {
                         '<div class="shares"><span class="left">likes:&nbsp;</span><span class="block">'+items[i].checks[last_check].like_count+
                         '</span><span class="left">shares:&nbsp;</span><span class="block">'+items[i].checks[last_check].share_count+
                         '</span><span class="left">comments:&nbsp;</span><span class="block">'+items[i].checks[last_check].comment_count+
-                        '</span><span class="left">tweets:&nbsp;</span><span class="block">'+items[i].checks[last_check].tweet_count+
                         '</span><span class="left timestamp">'+first_check_t.tz('Europe/Prague').format("DD/MM/YYYY HH:mm")+
                         '</span><span class="left timestamp">&nbsp;&nbsp;&nbsp;'+last_check_t.tz('Europe/Prague').format("DD/MM/YYYY HH:mm")+
                         '</span><span class="left timestamp">&nbsp;&nbsp;&nbsp;'+diff+
@@ -378,26 +377,15 @@ var MyApp = function() {
                                     if (!error && response.statusCode == 200) {
                                         var facebook_data = JSON.parse(body).data[0];
 
-                                        var tweets_req = 'http://urls.api.twitter.com/1/urls/count.json?url='+encoded_url;
+                                        var check = {
+                                            'timestamp': moment().toISOString(),
+                                            'like_count': facebook_data.like_count,
+                                            'share_count': facebook_data.share_count,
+                                            'comment_count': facebook_data.comment_count
+                                        };
 
-                                        request(tweets_req, function (error, response, body) {
-                                            if (!error && response.statusCode == 200) {
-
-                                                var check = {
-                                                    'timestamp': moment().toISOString(),
-                                                    'like_count': facebook_data.like_count,
-                                                    'share_count': facebook_data.share_count,
-                                                    'comment_count': facebook_data.comment_count,
-                                                    'tweet_count': JSON.parse(body).count
-                                                };
-
-                                                // insert data into db
-                                                self.db.collection('virality').update(data, {$addToSet: {'checks': check}}, {upsert: true});
-                                            }
-                                            else {
-                                                if (error) {console.log('twitter', error);}
-                                            }
-                                        });
+                                        // insert data into db
+                                        self.db.collection('virality').update(data, {$addToSet: {'checks': check}}, {upsert: true});
                                     }
                                     else {
                                         if (error) {console.log('facebook', error);}
