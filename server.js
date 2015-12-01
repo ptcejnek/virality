@@ -397,7 +397,7 @@ var MyApp = function() {
                             }
                         };
 
-                        var items_to_check = [];
+                        var items_to_check = [], looped = 0;
                         for (var j in items) {
 
                             // check how old item is
@@ -416,11 +416,13 @@ var MyApp = function() {
                             setTimeout(function () {
                                 getViralityData(items_to_check[i-1]);                
                                 if (--i) {
+                                    looped++;
                                     myLoop(i); // decrement i and call myLoop again if i > 0
                                 }
                                 else { // loop finished
                                     loop_running = 0; // marker signaling that loop can be started again
-                                    console.log('Likes obtained at', moment().tz('Europe/Prague').toISOString()+',', items_to_check.length+' articles.');
+                                    console.log('Likes obtained at', moment().tz('Europe/Prague').toISOString()+',', looped+' articles.');
+                                    looped = 0;
                                 }
                             }, 1100)
                         };
