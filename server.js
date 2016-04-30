@@ -8,6 +8,7 @@ var FeedParser = require('feedparser'), request = require('request');
 var moment = require('moment-timezone');
 
 
+// media sources
 var rss_feeds = [
     'http://idnes.cz.feedsportal.com/c/34387/f/625936/index.rss',
     'http://www.parlamentnilisty.cz/export/rss.aspx',
